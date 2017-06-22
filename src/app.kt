@@ -8,10 +8,13 @@ import problem.Solver
 
 fun main(args: Array<String>){
 
-    var solver = Solver("", 20)
+    for(i in 8..8) {
 
-    val sol = solver.localSearch(2000)
+        var solver = Solver("intances/instance"+i+".txt", 10)
 
-    println(sol)
-    println(" cost " + sol.cost)
+        val sol = solver.localSearch(20000)
+
+        println(sol)
+        println(" cost " + sol.cost)
+    }
 }

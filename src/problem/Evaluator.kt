@@ -11,4 +11,5 @@ interface Evaluator {
     fun getCosts() : Array< IntArray>;
     fun evaluate(sol: Solution): Int;
     fun evaluateExchange(sol: Solution, set: Int, elem: Int): Int;
+    fun candidates(): Int
 }

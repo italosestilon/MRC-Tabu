@@ -1,5 +1,9 @@
 package problem
 
+import java.io.BufferedReader
+import java.io.FileReader
+import java.io.IOException
+import java.io.StreamTokenizer
 import java.util.*
 
 /**
@@ -8,18 +12,23 @@ import java.util.*
 class MRC(filename: String) : Evaluator{
 
     var size: Int = 0;
+    var c = 0
 
-    var sets: Array<LinkedList<Int>>;
-    var m: Array<IntArray>;
+    var sets: Array<LinkedList<Int>>
+    var m: Array<IntArray>
 
     init {
         sets = Array(0, {_ -> LinkedList<Int>() })
         m = Array(0, {_ -> intArrayOf()})
-        instances()
+        readInput(filename)
     }
 
     override fun problemSize(): Int {
         return size
+    }
+
+    override fun candidates(): Int {
+        return c
     }
 
     override fun getSet(): Array<LinkedList<Int>> {
@@ -31,20 +40,20 @@ class MRC(filename: String) : Evaluator{
             }
             set
         })
-        return setsCopy;
+        return setsCopy
     }
 
     override fun getCosts(): Array<IntArray> {
-        return m.clone();
+        return m.clone()
     }
 
     override fun evaluate(sol: Solution): Int {
         var cost = 0;
         for(i in sol){
             for(j in sol){
-                if(i != j){
-                    cost+= m[i][j];
-                }
+
+                cost+= m[i][j];
+
             }
         }
         sol.cost = cost
@@ -55,16 +64,14 @@ class MRC(filename: String) : Evaluator{
         val sol2 = Solution(sol)
         sol2.remove(set)
         sol2.add(set, elem)
-        val improve = evaluate(sol2) - sol.cost
-        return improve
+        return evaluate(sol2)
     }
 
     private fun instances() {
 
         var random = Random(4)
-        val s = 20
-        var r = 50
-        var c = 0
+        val s = 10
+        var r = 10
 
         sets = Array<LinkedList<Int>>(s, {i ->
             var k = random.nextInt(r) + 1
@@ -98,6 +105,44 @@ class MRC(filename: String) : Evaluator{
             }
 
             println()
+        }
+
+        this.size = s
+
+    }
+
+
+    private fun readInput(filename: String) {
+        val fileInst = BufferedReader(FileReader(filename))
+        val stok = StreamTokenizer(fileInst)
+
+        stok.nextToken()
+        val s = stok.nval.toInt()
+
+        stok.nextToken()
+
+        sets = Array<LinkedList<Int>>(s, {i ->
+            val k = stok.nval.toInt()
+            stok.nextToken()
+            //println(k)
+            val set = LinkedList<Int>()
+            for (j in 0..k - 1) {
+                set.add(c++)
+            }
+            set
+        })
+
+        m = Array(c) { IntArray(c) }
+        var a: Int
+        for (i in 0..c - 1) {
+            for (j in 0..c - 1) {
+                a = stok.nval.toInt()
+                stok.nextToken()
+                m[i][j] = a
+                //print(a.toString() + " ")
+            }
+
+            //println("")
         }
 
         this.size = s

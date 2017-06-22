@@ -11,11 +11,16 @@ class Solver(instance: String, tenure: Int) {
     private var evaluator: Evaluator = MRC(instance)
     private val candidateSets: Array<LinkedList<Int>>
     private var tabuList = ArrayDeque<Int>()
+    private val frequency: Array<Int>
     private val tenure: Int;
+    private var tenureRestart = 0;
+    private val solutionsPool: ArrayList<Solution>
 
     init {
         candidateSets = evaluator.getSet()
         this.tenure = tenure
+        frequency = Array(evaluator.candidates()+1, {0})
+        solutionsPool = ArrayList<Solution>()
     }
 
     fun constructiveHeuristic() : Solution{
@@ -24,41 +29,67 @@ class Solver(instance: String, tenure: Int) {
 
         val solution = Solution()
 
-        for(set in candidateSets){
-            var cost = 0
-            var bestCost = -1
-            var indexBestCost = 0
-            for(item in set){
-                for(j in 0..m.size-1){
-                    cost += m[item][j]
+        var chosenCandidates = IntArray(evaluator.problemSize(), {-1})
+
+        for((k, v) in candidateSets.withIndex()){
+            var bestCandidate = 0
+            var bestWeight = 0
+            for(i in v){
+                var total = 0
+                for((l, s) in candidateSets.withIndex()){
+                    var best = 0
+                    if(chosenCandidates[l] == -1){
+
+                        for(j in s){
+                            if(m[i][j] > best) {
+                                best = Integer.max(m[i][j], m[j][i])
+                            }
+                        }
+
+                    }else{
+                        val j = chosenCandidates[l]
+                        best = Integer.max(m[i][j], m[j][i])
+                    }
+
+                    total += best
                 }
 
-                if(cost > bestCost){
-                    bestCost = cost
-                    indexBestCost = item
+
+                if(total > bestWeight){
+                    bestWeight = total
+                    bestCandidate = i
                 }
+
+                //println("$i = ${costForCandidadte[i]}")
             }
-
-            solution.add(indexBestCost)
-            set.remove(indexBestCost)
+            candidateSets[k].remove(bestCandidate)
+            solution.add(k, bestCandidate)
         }
-
         return solution
     }
 
     fun localSearch(iterations: Int) : Solution{
 
         val initialSolution = constructiveHeuristic()
-        val incumbent = Solution(initialSolution)
+        var incumbent = Solution(initialSolution)
+        var bestSol = Solution(incumbent)
 
         evaluator.evaluate(incumbent)
+        bestSol.cost = incumbent.cost
 
         println("Initial solution " + incumbent)
         println("Initial solution cost" + incumbent.cost)
 
         var i = 0
+        var iterationsWithoutImprovement = 0
 
         while (i < iterations){
+
+            if(iterationsWithoutImprovement > 0 && iterationsWithoutImprovement % 100 == 0){
+                incumbent = Solution(restart(incumbent))
+                evaluator.evaluate(incumbent)
+                println("Reiniciou com custo "+incumbent.cost)
+            }
 
             val movement = getMovement(incumbent)
             if (movement != null) {
@@ -68,19 +99,30 @@ class Solver(instance: String, tenure: Int) {
             }
 
             evaluator.evaluate(incumbent)
+            iterationsWithoutImprovement++
+            if(incumbent.cost > bestSol.cost){
+                solutionsPool.add(incumbent.clone() as Solution)
+                bestSol = Solution(incumbent)
+                bestSol.cost = incumbent.cost
+                iterationsWithoutImprovement = 0
+                System.out.println("Melhorou na iteraração " + i +" custo "+bestSol.cost)
+            }
 
+            //System.out.println("iteraçaõ "+ i + " tabu" + tabuList)
             i++
         }
 
-        return incumbent
+        return bestSol
 
     }
 
+
     private fun  makeMovementATabu(movement: Pair<Int, Int>) {
         if(tabuList.size == tenure){
-            tabuList.poll();
+            tabuList.poll()
         }
 
+        frequency[movement.second]++
         tabuList.add(movement.second)
     }
 
@@ -102,14 +144,13 @@ class Solver(instance: String, tenure: Int) {
                 bestMovement = movement
                 bestMovementCost = cost
 
-                if(cost > solution.cost) break;
+                if(cost > solution.cost) break
             }
         }
         if (bestMovement != null) {
+            val flag = candidateSets[bestMovement.first].remove(bestMovement.second)
+            assert(flag)
             candidateSets[bestMovement.first].add(solution[bestMovement.first])
-        }
-        if (bestMovement != null) {
-            candidateSets[bestMovement.first].remove(bestMovement.second)
         }
 
         return bestMovement
@@ -117,5 +158,52 @@ class Solver(instance: String, tenure: Int) {
 
     private fun  notATabu(movement: Pair<Int, Int>): Boolean {
         return !tabuList.contains(movement.second)
+    }
+
+    private fun restart(incumbent : Solution) : Solution{
+
+        for(set in candidateSets){
+            println(set)
+        }
+
+        for((key, value) in incumbent.withIndex()){
+            candidateSets[key].add(value)
+        }
+
+        val random = Random()
+        val solution = solutionsPool[random.nextInt(solutionsPool.size)]
+
+        for((key, value) in solution.withIndex()){
+            candidateSets[key].remove(value)
+        }
+
+
+        val maximuns = nMax(frequency,tenure)
+
+        tabuList.clear()
+        maximuns.filter { it >= 0 }
+                .forEach { tabuList.add(it) }
+
+        return solution
+    }
+
+    fun nMax(v: Array<Int>, n: Int): IntArray {
+        val maxVector = IntArray(n)
+        for (i in 0..n - 1) {
+            var best = 0
+            for (j in v.indices) {
+                if (v[j] > v[best]) {
+                    best = j
+                }
+            }
+            if (v[best] == 0) {
+                maxVector[i] = -1
+            } else {
+                maxVector[i] = best
+            }
+
+            v[best] = 0
+        }
+        return maxVector
     }
 }
