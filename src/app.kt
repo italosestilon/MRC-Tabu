@@ -8,13 +8,22 @@ import problem.Solver
 
 fun main(args: Array<String>){
 
-    for(i in 8..8) {
+    val filename = args[0]
 
-        var solver = Solver("intances/instance"+i+".txt", 10)
+    val tenure = args[1].toFloat()
 
-        val sol = solver.localSearch(20000)
+    val iterations = args[2].toInt()
 
-        println(sol)
-        println(" cost " + sol.cost)
-    }
+    var solver = Solver(filename, tenure, iterations)
+    val startTime = System.currentTimeMillis()
+    val sol = solver.localSearch(100000)
+    val endTime = System.currentTimeMillis()
+    val totalTime = endTime - startTime
+
+    print(sol.cost*(-1))
+    println(" "+ totalTime.toDouble() / 1000.toDouble())
+    println()
+
+
+
 }

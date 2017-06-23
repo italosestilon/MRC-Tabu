@@ -6,24 +6,52 @@ import kotlin.collections.ArrayList
 /**
  * Created by estilon on 02/06/17.
  */
-class Solver(instance: String, tenure: Int) {
+class Solver(instance: String, tenure: Float, iterations: Int) {
 
     private var evaluator: Evaluator = MRC(instance)
     private val candidateSets: Array<LinkedList<Int>>
     private var tabuList = ArrayDeque<Int>()
     private val frequency: Array<Int>
-    private val tenure: Int;
-    private var tenureRestart = 0;
+    private val tenure: Int
     private val solutionsPool: ArrayList<Solution>
+    private val iterations : Int
 
     init {
         candidateSets = evaluator.getSet()
-        this.tenure = tenure
+        this.tenure = (evaluator.candidates()*tenure).toInt()
         frequency = Array(evaluator.candidates()+1, {0})
         solutionsPool = ArrayList<Solution>()
+        this.iterations = iterations
     }
 
     fun constructiveHeuristic() : Solution{
+
+        /*val m = evaluator.getCosts()
+
+        val solution = Solution()
+
+        for(set in candidateSets){
+            var cost = 0
+            var bestCost = -1
+            var indexBestCost = 0
+            for(item in set){
+                for(j in 0..m.size-1){
+                    cost += m[item][j]
+                }
+
+                if(cost > bestCost){
+                    bestCost = cost
+                    indexBestCost = item
+                }
+            }
+
+            solution.add(indexBestCost)
+            set.remove(indexBestCost)
+        }
+
+        return solution*/
+
+        //candidateSets.forEach { println(it) }
 
         val m = evaluator.getCosts()
 
@@ -32,8 +60,8 @@ class Solver(instance: String, tenure: Int) {
         var chosenCandidates = IntArray(evaluator.problemSize(), {-1})
 
         for((k, v) in candidateSets.withIndex()){
-            var bestCandidate = 0
-            var bestWeight = 0
+            var bestCandidate = -1
+            var bestWeight = -1
             for(i in v){
                 var total = 0
                 for((l, s) in candidateSets.withIndex()){
@@ -77,18 +105,20 @@ class Solver(instance: String, tenure: Int) {
         evaluator.evaluate(incumbent)
         bestSol.cost = incumbent.cost
 
-        println("Initial solution " + incumbent)
-        println("Initial solution cost" + incumbent.cost)
+        solutionsPool.add(incumbent.clone() as Solution)
+
+        //println("Initial solution " + incumbent)
+        //println("Initial solution cost" + incumbent.cost)
 
         var i = 0
         var iterationsWithoutImprovement = 0
 
         while (i < iterations){
 
-            if(iterationsWithoutImprovement > 0 && iterationsWithoutImprovement % 100 == 0){
+            if(iterationsWithoutImprovement > 0 && iterationsWithoutImprovement % this.iterations == 0){
                 incumbent = Solution(restart(incumbent))
                 evaluator.evaluate(incumbent)
-                println("Reiniciou com custo "+incumbent.cost)
+                //println("Reiniciou com custo "+incumbent.cost)
             }
 
             val movement = getMovement(incumbent)
@@ -105,7 +135,7 @@ class Solver(instance: String, tenure: Int) {
                 bestSol = Solution(incumbent)
                 bestSol.cost = incumbent.cost
                 iterationsWithoutImprovement = 0
-                System.out.println("Melhorou na iteraração " + i +" custo "+bestSol.cost)
+                //System.out.println("Melhorou na iteraração " + i +" custo "+bestSol.cost)
             }
 
             //System.out.println("iteraçaõ "+ i + " tabu" + tabuList)
@@ -147,6 +177,7 @@ class Solver(instance: String, tenure: Int) {
                 if(cost > solution.cost) break
             }
         }
+        assert(bestMovement != null)
         if (bestMovement != null) {
             val flag = candidateSets[bestMovement.first].remove(bestMovement.second)
             assert(flag)
@@ -162,21 +193,18 @@ class Solver(instance: String, tenure: Int) {
 
     private fun restart(incumbent : Solution) : Solution{
 
-        for(set in candidateSets){
-            println(set)
-        }
-
         for((key, value) in incumbent.withIndex()){
             candidateSets[key].add(value)
         }
 
         val random = Random()
-        val solution = solutionsPool[random.nextInt(solutionsPool.size)]
+        val solution = Solution(solutionsPool[random.nextInt(solutionsPool.size)])
 
         for((key, value) in solution.withIndex()){
             candidateSets[key].remove(value)
         }
 
+        //println(solution)
 
         val maximuns = nMax(frequency,tenure)
 
