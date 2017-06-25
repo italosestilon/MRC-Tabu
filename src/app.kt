@@ -19,10 +19,10 @@ fun main(args: Array<String>){
     val sol = solver.localSearch(100000)
     val endTime = System.currentTimeMillis()
     val totalTime = endTime - startTime
-
+    //println(sol)
     print(sol.cost*(-1))
-    println(" "+ totalTime.toDouble() / 1000.toDouble())
-    println()
+    println(" "+totalTime.toDouble() / 1000.toDouble())
+    //println()
 
 
 

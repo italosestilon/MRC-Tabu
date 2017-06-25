@@ -112,8 +112,9 @@ class Solver(instance: String, tenure: Float, iterations: Int) {
 
         var i = 0
         var iterationsWithoutImprovement = 0
+        val millis = System.currentTimeMillis() + 5 * 60 * 1000
 
-        while (i < iterations){
+        while (System.currentTimeMillis() <= millis){
 
             if(iterationsWithoutImprovement > 0 && iterationsWithoutImprovement % this.iterations == 0){
                 incumbent = Solution(restart(incumbent))
